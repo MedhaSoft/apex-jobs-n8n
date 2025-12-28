@@ -1,0 +1,137 @@
+{
+  "name": "Murari",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "082f1c6b-2dc7-45cb-bf4d-3a05933060b4",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Force single page only\nreturn [\n  {\n    json: {\n      page: 1\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "a3e38111-12de-434a-8eaf-6bd28444c70e",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "url": "=https://www.apexsystems.com/search-results-usa?page={{$json.page}}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        416,
+        0
+      ],
+      "id": "dac76a6c-6ec0-41de-9191-7aea6a371cdd",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "Rows",
+              "cssSelector": "Table tr",
+              "returnValue": "html",
+              "returnArray": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        624,
+        0
+      ],
+      "id": "b83dacb8-2936-4cc2-a2c3-8b6bc53ee8e6",
+      "name": "HTML"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.first().json.Rows || [];\nconst jobs = [];\n\nfunction clean(text = \"\") {\n  return text\n    .replace(/<[^>]+>/g, \" \")\n    .replace(/\\s+/g, \" \")\n    .trim();\n}\n\nfor (const row of rows) {\n  // skip header row\n  if (row.includes(\"<th>\")) continue;\n\n  const cells = row.match(/<td[^>]*>[\\s\\S]*?<\\/td>/g);\n  if (!cells || cells.length < 4) continue;\n\n  const titleCell = cells[0];\n  const cityCell = cells[1];\n  const stateCell = cells[2];\n  const dateCell = cells[3];\n\n  const hrefMatch = titleCell.match(/href=\"([^\"]+)\"/);\n  const url = hrefMatch\n    ? \"https://www.apexsystems.com\" + hrefMatch[1]\n    : null;\n\n  jobs.push({\n    title: clean(titleCell),\n    url,\n    city: clean(cityCell),\n    state: clean(stateCell),\n    date_posted: clean(dateCell),\n  });\n}\n\nreturn jobs.map(j => ({ json: j }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        832,
+        0
+      ],
+      "id": "6749842f-4e70-4a35-b389-8b9dd1f20797",
+      "name": "Code in JavaScript1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "d0f57a00-fd53-4265-8b0f-ddd81ce1594f",
+  "meta": {
+    "instanceId": "648cc09c85009df60e1f511f21b4bae0ad4bc832ab91fb3f477fd2ed10e77a40"
+  },
+  "id": "SiUvPKnVExdgjOSp",
+  "tags": []
+}
